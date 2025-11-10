@@ -106,12 +106,12 @@ macro_rules! parse_factorial {
     ($expressions:ident, $buffer:ident) => {
         loop {
             let expr = next_expression!($expressions);
-            if expr.len() == 0 {
-                break;
-            } else if expr.len() > 1 {
-                return Err(ParsingError::InvalidComma);
-            }
-            let expr = unsafe { expr.into_iter().next().unwrap_unchecked() };
+            let expr_len = expr.len();
+            let expr = match expr.into_iter().next() {
+                Some(e) if expr_len == 1 => e,
+                Some(_) => return Err(ParsingError::InvalidComma),
+                None => break
+            };
             match expr {
                 Expression::Token(Token::Factorial) => {
                     let arg1 = $buffer.pop().ok_or(ParsingError::ExpectedExpression)?;
@@ -134,12 +134,12 @@ macro_rules! parse_function {
     ($expressions:ident, $buffer:ident, $fn:ident $(, $other_fn:ident)*) => {
         loop {
             let expr = next_expression!($expressions);
-            if expr.len() == 0 {
-                break;
-            } else if expr.len() > 1 {
-                return Err(ParsingError::InvalidComma);
-            }
-            let expr = unsafe { expr.into_iter().next().unwrap_unchecked() };
+            let expr_len = expr.len();
+            let expr = match expr.into_iter().next() {
+                Some(e) if expr_len == 1 => e,
+                Some(_) => return Err(ParsingError::InvalidComma),
+                None => break
+            };
             match expr {
                 Expression::Token(Token::$fn $(| Token::$other_fn)*) => {
                     let function = expr.unwrap_token_unchecked();
@@ -188,12 +188,12 @@ macro_rules! parse_operation {
     ($expressions:ident, $buffer:ident, $op:ident $(, $other_op:ident)*) => {
         loop {
             let expr = next_expression!($expressions);
-            if expr.len() == 0 {
-                break;
-            } else if expr.len() != 1 {
-                return Err(ParsingError::InvalidComma);
-            }
-            let expr = unsafe { expr.into_iter().next().unwrap_unchecked() };
+            let expr_len = expr.len();
+            let expr = match expr.into_iter().next() {
+                Some(e) if expr_len == 1 => e,
+                Some(_) => return Err(ParsingError::InvalidComma),
+                None => break
+            };
             match expr {
                 Expression::Token(Token::$op $(| Token::$other_op)*) => {
                     let operation = expr.unwrap_token_unchecked();
@@ -291,21 +291,18 @@ fn parse_expressions(expressions: Vec<Expression>) -> Result<ParseTree, ParsingE
 
     parse_operation!(expressions, buffer, Add, Sub);
 
-    if buffer.len() == 1 {
-        match unsafe { buffer.into_iter().next().unwrap_unchecked() } {
-            Expression::Token(token) => {
-                if token.is_value() {
-                    Ok(ParseTree::new(token))
-                } else {
-                    Err(ParsingError::Unknown)
-                }
+    let buffer_len = buffer.len();
+    match buffer.into_iter().next() {
+        Some(Expression::Token(token)) if buffer_len == 1 => {
+            if token.is_value() {
+                Ok(ParseTree::new(token))
+            } else {
+                Err(ParsingError::Unknown)
             }
-            Expression::Tree(tree) => Ok(tree),
         }
-    } else if buffer.len() == 0 {
-        Err(ParsingError::BlankInput)
-    } else {
-        Err(ParsingError::ExpectedOperation)
+        Some(Expression::Tree(tree)) if buffer_len == 1 => Ok(tree),
+        Some(_) => Err(ParsingError::ExpectedOperation),
+        None => Err(ParsingError::BlankInput),
     }
 }
 
