@@ -62,7 +62,7 @@ impl TryFrom<String> for Token {
                 "tan" => Self::Tan,
                 "exp" => Self::Exp,
                 "ln" => Self::Ln,
-                "Log" => Self::Log,
+                "log" => Self::Log,
                 "sqrt" => Self::Sqrt,
                 _ => return Err(())
             })
