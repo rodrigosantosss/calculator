@@ -254,11 +254,6 @@ fn parse_expressions(expressions: Vec<Expression>) -> Result<ParseTree, ParsingE
 
     let mut buffer = Vec::new();
 
-    parse_factorial!(expressions, buffer);
-
-    expressions = buffer.into_iter();
-    buffer = Vec::new();
-
     parse_function!(
         expressions,
         buffer,
@@ -270,6 +265,11 @@ fn parse_expressions(expressions: Vec<Expression>) -> Result<ParseTree, ParsingE
         Log,
         Sqrt
     );
+
+    expressions = buffer.into_iter();
+    buffer = Vec::new();
+
+    parse_factorial!(expressions, buffer);
 
     expressions = buffer.into_iter();
     buffer = Vec::new();
